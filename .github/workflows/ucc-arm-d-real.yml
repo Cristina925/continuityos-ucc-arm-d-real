@@ -1,0 +1,40 @@
+name: UCC Arm D Real Precheck Comparator
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ucc-arm-d:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:8.2-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Redis CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y redis-tools
+
+      - name: Capture Redis version
+        run: |
+          redis-cli INFO server | grep redis_version > redis-version.txt
+
+      - name: Run frozen Arm-D comparator
+        run: python3 ucc_arm_d_redis_real.py
+
+      - name: Preserve version evidence
+        if: always()
+        run: cp redis-version.txt evidence/redis-version.txt || true
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CONTINUITYOS-UCC-VAL-002-D-REAL-001-EVIDENCE
+          path: evidence/
